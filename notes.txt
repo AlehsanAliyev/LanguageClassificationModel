@@ -1,0 +1,7 @@
+russian
+https://huggingface.co/datasets/Den4ikAI/russian_cleared_wikipedia
+https://huggingface.co/datasets/Romjiik/Russian_bank_reviews/viewer/default/train?views%5B%5D=train
+https://huggingface.co/datasets/FacelessLake/noise-augmented-russian-librispeech
+
+
+
