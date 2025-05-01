@@ -1,0 +1,32 @@
+# Ignore data and logs
+data/
+logs/
+downloaded_data/
+flagged/
+models/
+__pycache__/
+
+# Ignore virtual environment
+venv/
+
+# Python compiled files
+*.pyc
+*.pyo
+*.pyd
+
+# Model checkpoints
+*.pt
+
+
+# Ignore temporary or backup files
+*.csv
+*.tsv
+*.json
+*.log
+*.bak
+*.tmp
+
+
+# OS files
+.DS_Store
+Thumbs.db
