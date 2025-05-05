@@ -1,18 +1,17 @@
 import gradio as gr
 import torch
 import torch.nn as nn
-import pandas as pd
 from tokenizers import Tokenizer
 
 # ==== Load Tokenizer ====
-tokenizer = Tokenizer.from_file("data/final/bpe_tokenizer.json")
+tokenizer = Tokenizer.from_file("data/final2/bpe_tokenizer.json")
 MAX_LEN = 100
 
 # ==== Label Mapping ====
 id2label = {0: "az", 1: "en", 2: "ru"}
 
 # ==== Model Config ====
-VOCAB_SIZE = 30000  # Should match training
+VOCAB_SIZE = 64000  # Updated to match tokenizer training
 EMBED_DIM = 128
 HIDDEN_DIM = 128
 NUM_CLASSES = 3
@@ -34,7 +33,7 @@ class BiLSTMClassifier(nn.Module):
 # ==== Load Model ====
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = BiLSTMClassifier(VOCAB_SIZE, EMBED_DIM, HIDDEN_DIM, NUM_CLASSES).to(device)
-model.load_state_dict(torch.load("models/bilstm_langid.pt", map_location=device))
+model.load_state_dict(torch.load("models/bilstm_langid2.pt", map_location=device))
 model.eval()
 
 # ==== Prediction Function ====
@@ -48,17 +47,17 @@ def predict_language(text):
         pred = logits.argmax(dim=1).item()
     return id2label[pred]
 
-# ==== Launch Gradio Interface ====
+# ==== Launch Gradio App ====
 demo = gr.Interface(
     fn=predict_language,
     inputs=gr.Textbox(label="Enter Text"),
     outputs=gr.Label(label="Predicted Language"),
     title="🌐 Language Identifier",
-    description="Enter a sentence and predict whether it's Azerbaijani (az), English (en), or Russian (ru).",
+    description="Predicts the language (Azerbaijani, English, Russian) from a sentence.",
     examples=[
         "Bu gün hava çox gözəldir.",
         "This model was trained on multilingual data.",
-        "Привет, как дела?"
+        "Privet, kak dela?"
     ]
 )
 

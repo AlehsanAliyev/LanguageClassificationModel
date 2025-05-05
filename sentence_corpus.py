@@ -49,11 +49,11 @@ LANG_LIMITS = {
     "ru": {
         "max_sent": 50000, "max_multi": 25000,
         "limits": {
-            "data/ru/bank_reviews.txt": (20000, 10000),
-            "data/ru/librispeech_text.txt": (10000, 5000),
-            "data/ru/russian_cleared_wikipedia.txt": ("fill", "fill"),
-            "data/ru/bank_reviews_translit.txt": (10000, 5000),
-            "data/ru/russian_cleared_wikipedia_translit.txt": ("fill", "fill")
+            "data/ru/bank_reviews.txt": (15000, 9000),
+            "data/ru/librispeech_text.txt": (7000, 1000),
+            "data/ru/russian_cleared_wikipedia.txt": (8000, 6000),
+            "data/ru/bank_reviews_translit2.txt": (10000, 5000),
+            "data/ru/russian_cleared_wikipedia_translit2.txt": ("fill", "fill")
         }
     }
 }
@@ -75,8 +75,8 @@ corpus_sources = {
         ("data/ru/bank_reviews.txt", False),
         ("data/ru/librispeech_text.txt", False),
         ("data/ru/russian_cleared_wikipedia.txt", False),
-        ("data/ru/bank_reviews_translit.txt", False),
-        ("data/ru/russian_cleared_wikipedia_translit.txt", False)
+        ("data/ru/bank_reviews_translit2.txt", False),
+        ("data/ru/russian_cleared_wikipedia_translit2.txt", False)
     ]
 }
 
@@ -159,10 +159,10 @@ for lang, sources in corpus_sources.items():
 # Save outputs
 os.makedirs("data/corpus", exist_ok=True)
 
-with open("data/corpus/sentence_corpus_balanced.csv", "w", newline="", encoding="utf-8") as f:
+with open("data/corpus/sentence_corpus_balanced2.csv", "w", newline="", encoding="utf-8") as f:
     csv.writer(f).writerows([["text", "lang"]] + sent_rows)
 
-with open("data/corpus/multisentence_corpus_balanced.csv", "w", newline="", encoding="utf-8") as f:
+with open("data/corpus/multisentence_corpus_balanced2.csv", "w", newline="", encoding="utf-8") as f:
     csv.writer(f).writerows([["text", "lang"]] + multi_rows)
 
 print("\n✅ Corpus build complete!")

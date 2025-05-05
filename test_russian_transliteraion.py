@@ -3,7 +3,7 @@ import torch
 from tokenizers import Tokenizer
 
 # Load tokenizer and model
-tokenizer = Tokenizer.from_file("data/final/bpe_tokenizer.json")
+tokenizer = Tokenizer.from_file("data/final2/bpe_tokenizer.json")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Define model (same as in training)
@@ -21,8 +21,8 @@ class BiLSTMClassifier(torch.nn.Module):
         return self.fc(h_cat)
 
 # Load model
-model = BiLSTMClassifier(30000, 128, 128, 3).to(device)
-model.load_state_dict(torch.load("models/bilstm_langid.pt", map_location=device))
+model = BiLSTMClassifier(64000, 1024, 512, 3).to(device)
+model.load_state_dict(torch.load("models/bilstm_langid3.pt", map_location=device))
 model.eval()
 
 # Label mapping
@@ -32,13 +32,13 @@ single_words = [
     "privet",            # hi
     "poka",              # bye
     "spasibo",           # thank you
-    "pozhaluysta",       # please
+    "pojaluysta",       # please
     "khorosho",          # good
-    "ploho",             # bad
+    "plokho",             # bad
     "dom",               # house
     "rabota",            # work
     "voda",              # water
-    "druzhba"            # friendship
+    "drujba"            # friendship
 ]
 phrases = [
     "kak dela",                        # how are you
@@ -46,9 +46,9 @@ phrases = [
     "eto ochen vkusno",               # this is very tasty
     "ya ne znayu",                     # I don't know
     "kak tebya zovut",                # what is your name
-    "dobroe utro",                    # good morning
+    "dobroye utro",                    # good morning
     "dobriy vecher",                  # good evening
-    "mne nuzhna pomoshch",            # I need help
+    "mne nujna pomoshch",            # I need help
     "gde tualet",                     # where is the toilet
     "skolko eto stoit"                # how much does it cost
 ]
@@ -61,12 +61,14 @@ sentences = [
     "mne nravitsya russkaya eda",             # I like Russian food
     "u menya net deneg",                      # I have no money
     "ya izuchayu angliyskiy yazyk",           # I am learning English
-    "vchera my byli na vechinke",             # Yesterday we were at a party
+    "vchera my bili na vecherinke",             # Yesterday we were at a party
     "on chitayet knigu v parke"               # He is reading a book in the park
 ]
 
 all_texts = single_words + phrases + sentences
 
+
+ans = {}
 # Inference
 MAX_LEN = 100
 for text in all_texts:
@@ -76,3 +78,12 @@ for text in all_texts:
     with torch.no_grad():
         pred = model(x).argmax(dim=1).item()
     print(f"{text} -> {id2label[pred]}")
+    if id2label[pred] not in ans:
+        ans[id2label[pred]] = 1
+    else:
+        ans[id2label[pred]] += 1
+
+
+print("Overall accuracy: ", ans["ru"]/len(all_texts))
+print("Detected languages: ", ans)
+

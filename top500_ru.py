@@ -5,14 +5,14 @@ from collections import Counter
 # Input files with desired top-N sizes
 input_files = {
     "bank_reviews": ("data/ru/bank_reviews.txt", 270),
-    "russian_wiki": ("data/ru/russian_cleared_wikipedia.txt", 270),
-    "bank_reviews_translit": ("data/ru/bank_reviews_translit.txt", 153),
-    "russian_wiki_translit": ("data/ru/russian_cleared_wikipedia_translit.txt", 154),
-    "librispeech": ("data/ru/librispeech_text.txt", 153)
+    "russian_wiki": ("data/ru/russian_cleared_wikipedia.txt", 200),
+    "bank_reviews_translit": ("data/ru/bank_reviews_translit2.txt", 200),
+    "russian_wiki_translit": ("data/ru/russian_cleared_wikipedia_translit2.txt", 200),
+    "librispeech": ("data/ru/librispeech_text.txt", 130)
 }
 
 # Output directory
-output_dir = "data/ru/top_words"
+output_dir = "data/ru/top_words2"
 os.makedirs(output_dir, exist_ok=True)
 
 # Tokenizer that supports Cyrillic + Latin words

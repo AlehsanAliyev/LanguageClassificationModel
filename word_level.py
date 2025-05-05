@@ -1,18 +1,18 @@
 import os
 import csv
 
-# Define input folders and their language tags
+
 lang_dirs = {
     "az": "data/az/top500_words",
     "en": "data/en/top500_words",
-    "ru": "data/ru/top_words"
+    "ru": "data/ru/top_words2"
 }
 
-# Output file
-output_path = "data/corpus/word_corpus.csv"
+
+output_path = "data/corpus/word_corpus2.csv"
 os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-# Collect words
+
 rows = []
 
 for lang, folder in lang_dirs.items():
@@ -26,7 +26,7 @@ for lang, folder in lang_dirs.items():
                         rows.append((word, lang))
 
 # Truncate to ~3000 max words (optional)
-rows = rows[:3000]
+# rows = rows[:3000]
 
 # Write to CSV
 with open(output_path, "w", newline="", encoding="utf-8") as csvfile:

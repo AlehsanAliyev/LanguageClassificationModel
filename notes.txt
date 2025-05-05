@@ -5,3 +5,7 @@ https://huggingface.co/datasets/FacelessLake/noise-augmented-russian-librispeech
 
 
 
+Thank you alright now let's try this stuff with embedding logic. Liek okay dataset is ready we have word, senetcens, multiple sentences.
+
+like we did it with tokenizer logic now with embedding.
+Try to make them go thourgh BGE M3 model. it wil generate

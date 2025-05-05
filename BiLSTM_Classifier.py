@@ -35,9 +35,9 @@ device = torch.device("cuda")
 print(f"✅ Using device: {device}")
 
 # ========== Parameters ==========
-VOCAB_SIZE = 30000  # set to your BPE vocab size
-EMBED_DIM = 128
-HIDDEN_DIM = 128
+VOCAB_SIZE = 64000  # updated BPE vocab size
+EMBED_DIM = 1024
+HIDDEN_DIM = 512
 NUM_CLASSES = 3
 BATCH_SIZE = 64
 EPOCHS = 5
@@ -45,7 +45,7 @@ EPOCHS = 5
 # ========== Load Tokenized CSVs ==========
 def load_dataset(path):
     df = pd.read_csv(path)
-    sequences = df["input_ids"].apply(lambda x: [int(i) for i in x.strip("[]").split()])
+    sequences = df["input_ids"].apply(lambda x: [int(i) for i in x.strip().split()])
     labels = df["label"].tolist()
     max_len = max(len(seq) for seq in sequences)
     padded = [seq + [0] * (max_len - len(seq)) for seq in sequences]
@@ -53,8 +53,8 @@ def load_dataset(path):
     y_tensor = torch.tensor(labels, dtype=torch.long)
     return x_tensor, y_tensor
 
-x_train, y_train = load_dataset("data/final/train_tokenized.csv")
-x_test, y_test = load_dataset("data/final/test_tokenized.csv")
+x_train, y_train = load_dataset("data/final2/train_tokenized.csv")
+x_test, y_test = load_dataset("data/final2/test_tokenized.csv")
 
 train_loader = DataLoader(TensorDataset(x_train, y_train), batch_size=BATCH_SIZE, shuffle=True)
 test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=BATCH_SIZE)
@@ -92,7 +92,7 @@ for epoch in range(EPOCHS):
 
 # ========== Save Model ==========
 os.makedirs("models", exist_ok=True)
-model_path = "models/bilstm_langid.pt"
+model_path = "models/bilstm_langid3.pt"
 torch.save(model.state_dict(), model_path)
 print(f"✅ Model saved to {model_path}")
 
