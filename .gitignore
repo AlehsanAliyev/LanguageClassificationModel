@@ -1,10 +1,17 @@
-# Ignore data and logs
+# Ignore data and logs (keep empty folder placeholders)
 data/
 logs/
 downloaded_data/
 flagged/
 models/
 __pycache__/
+
+# Allow placeholder files to keep empty dirs in git
+!data/.gitkeep
+!logs/.gitkeep
+!downloaded_data/.gitkeep
+!flagged/.gitkeep
+!models/.gitkeep
 
 # Ignore virtual environment
 venv/
@@ -17,7 +24,6 @@ venv/
 # Model checkpoints
 *.pt
 
-
 # Ignore temporary or backup files
 *.csv
 *.tsv
@@ -25,7 +31,6 @@ venv/
 *.log
 *.bak
 *.tmp
-
 
 # OS files
 .DS_Store

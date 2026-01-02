@@ -1,93 +1,186 @@
-# Research_n_Development
+# Language Classification Model
+A BiLSTM-based language identifier for Azerbaijani (az), English (en), and Russian (ru).
 
+## What it does
+- Trains a BiLSTM classifier on word-, sentence-, and multi-sentence corpora.
+- Builds and applies a BPE tokenizer for text normalization and encoding.
+- Serves a local Gradio demo for interactive language prediction.
+- Evaluates predictions with classification reports and confusion matrices.
 
+## Datasets
+Used by default in the current data download scripts:
+- Azerbaijani: `arzumanabbasov/azbanks-qadata`, `allmalab/DOLLMA` (configs: `anl-news`, `azwiki`) in `load_aze_data.py`.
+- English: `agentlans/wikipedia-paragraphs` in `load_english_data.py`.
+- Russian: `FacelessLake/noise-augmented-russian-librispeech`, `Romjiik/Russian_bank_reviews`, `Den4ikAI/russian_cleared_wikipedia` in `load_rus_data.py`.
 
-## Getting started
+Optional datasets present in `load_english_data.py` (commented out by default):
+- `wikimedia/wikipedia` (config: `20231101.ace`)
+- `takala/financial_phrasebank` (config: `sentences_allagree`)
+- `zeroshot/twitter-financial-news-sentiment`
+- `ag_news`
+- `MohammadOthman/mo-customer-support-tweets-945k`
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Demo (Gradio) quickstart
+Requires a trained model at `models/bilstm_langid2.pt` and a tokenizer at `data/final2/bpe_tokenizer.json` (as loaded in `gradio_app.py`).
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+```powershell
+# optional: create/activate a virtual environment
+python -m venv venv
+.\venv\Scripts\activate
 
-## Add your files
+# install dependencies
+pip install torch pandas tokenizers datasets scikit-learn matplotlib seaborn tqdm gradio ollama
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
+# run demo
+python gradio_app.py
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/azaitech1/vocalai/research_n_development.git
-git branch -M main
-git push -uf origin main
+
+## Training
+The training pipeline in this repo is driven by the existing scripts below. Dataset downloads require internet access and use Hugging Face datasets.
+
+```powershell
+# 1) Download raw data
+python load_aze_data.py
+python load_english_data.py
+python load_rus_data.py
+
+# 2) Optional: transliterate Russian corpora (used by sentence_corpus.py)
+python transliterate_rus.py
+
+# 3) Build top words and word-level corpus
+python top500_in_aze.py
+python top500_en.py
+python top500_ru.py
+python word_level.py
+
+# 4) Build sentence and multi-sentence corpora
+python sentence_corpus.py
+
+# 5) Prepare train/test split
+python prepare_data_for_classification.py
+
+# 6) Train tokenizer and tokenize datasets
+python tokenizing.py
+
+# 7) Train BiLSTM model (CUDA required)
+python BiLSTM_Classifier.py
 ```
 
-## Integrate with your tools
+Evaluation (optional):
+```powershell
+python llama_vs_our_model.py
+```
 
-- [ ] [Set up project integrations](https://gitlab.com/azaitech1/vocalai/research_n_development/-/settings/integrations)
+## Inference / prediction usage
+This snippet mirrors the inference logic in `gradio_app.py`.
 
-## Collaborate with your team
+```python
+import torch
+import torch.nn as nn
+from tokenizers import Tokenizer
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+class BiLSTMClassifier(nn.Module):
+    def __init__(self, vocab_size, embed_dim, hidden_dim, num_classes):
+        super().__init__()
+        self.embedding = nn.Embedding(vocab_size, embed_dim)
+        self.lstm = nn.LSTM(embed_dim, hidden_dim, batch_first=True, bidirectional=True)
+        self.fc = nn.Linear(hidden_dim * 2, num_classes)
 
-## Test and Deploy
+    def forward(self, x):
+        x = self.embedding(x)
+        _, (h_n, _) = self.lstm(x)
+        h_cat = torch.cat((h_n[0], h_n[1]), dim=1)
+        return self.fc(h_cat)
 
-Use the built-in continuous integration in GitLab.
+tokenizer = Tokenizer.from_file("data/final2/bpe_tokenizer.json")
+id2label = {0: "az", 1: "en", 2: "ru"}
+MAX_LEN = 100
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = BiLSTMClassifier(64000, 128, 128, 3).to(device)
+model.load_state_dict(torch.load("models/bilstm_langid2.pt", map_location=device))
+model.eval()
 
-***
+def predict_language(text: str) -> str:
+    ids = tokenizer.encode(text).ids[:MAX_LEN]
+    padded = ids + [0] * (MAX_LEN - len(ids))
+    x = torch.tensor([padded], dtype=torch.long).to(device)
+    with torch.no_grad():
+        pred = model(x).argmax(dim=1).item()
+    return id2label[pred]
 
-# Editing this README
+print(predict_language("salam, bu gun hava yaxsidir"))
+print(predict_language("this is a simple test sentence"))
+print(predict_language("privet, kak dela"))
+```
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+## Data
+Expected locations and formats based on the scripts:
 
-## Suggestions for a good README
+- Raw language text files:
+  - `data/az/*.txt`, `data/en/*.txt`, `data/ru/*.txt`
+- Top word lists:
+  - `data/az/top500_words/*.txt`, `data/en/top500_words/*.txt`, `data/ru/top_words2/*.txt`
+- Word-level corpus CSV:
+  - `data/corpus/word_corpus2.csv` with columns: `text, lang`
+- Sentence corpora CSVs:
+  - `data/corpus/sentence_corpus_balanced2.csv`
+  - `data/corpus/multisentence_corpus_balanced2.csv`
+  - Both with columns: `text, lang`
+- Train/test CSVs:
+  - `data/final2/train.csv`, `data/final2/test.csv` with columns: `text, label`
+- Tokenized CSVs:
+  - `data/final2/train_tokenized2.csv`, `data/final2/test_tokenized2.csv` with columns: `input_ids, label`
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+Label space is defined in multiple scripts as:
+- `az` -> 0
+- `en` -> 1
+- `ru` -> 2
 
-## Name
-Choose a self-explaining name for your project.
+## Project structure
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+| Path | Purpose |
+| --- | --- |
+| `.gitignore` | Ignores large artifacts and data outputs |
+| `BiLSTM_Classifier.py` | BiLSTM training and evaluation |
+| `gradio_app.py` | Gradio demo for local inference |
+| `tokenizing.py` | Train BPE tokenizer and tokenize datasets |
+| `prepare_data_for_classification.py` | Build train/test CSVs |
+| `sentence_corpus.py` | Build sentence/multi-sentence corpora |
+| `word_level.py` | Build word-level corpus |
+| `load_aze_data.py` | Download Azerbaijani datasets |
+| `load_english_data.py` | Download English datasets |
+| `load_rus_data.py` | Download Russian datasets |
+| `transliterate_rus.py` | Transliterates Russian text |
+| `custom_russian_transliteraion.py` | Custom transliteration rules |
+| `llama_vs_our_model.py` | Evaluate predictions + confusion matrix |
+| `test_russian_transliteraion.py` | Manual inference on transliterated Russian |
+| `test.py` | Tokenized dataset inspection (CUDA required) |
+| `models/` | Saved PyTorch weights (ignored in git) |
+| `data/` | Raw and processed data (ignored in git) |
+| `logs/` | Training/eval logs (ignored in git) |
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+## Roadmap / TODO
+- Align training and inference hyperparameters via a shared config.
+- Add CLI arguments for data/model paths.
+- Add CPU fallback for training instead of exiting when CUDA is unavailable.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+## Acknowledgements
+- Hugging Face datasets used in `load_aze_data.py`, `load_english_data.py`, and `load_rus_data.py`:
+  - https://huggingface.co/datasets/arzumanabbasov/azbanks-qadata
+  - https://huggingface.co/datasets/allmalab/DOLLMA (configs: `anl-news`, `azwiki`)
+  - https://huggingface.co/datasets/agentlans/wikipedia-paragraphs
+  - https://huggingface.co/datasets/FacelessLake/noise-augmented-russian-librispeech
+  - https://huggingface.co/datasets/Romjiik/Russian_bank_reviews
+  - https://huggingface.co/datasets/Den4ikAI/russian_cleared_wikipedia
+  - Optional (commented in `load_english_data.py`):
+    - https://huggingface.co/datasets/wikimedia/wikipedia (config: `20231101.ace`)
+    - https://huggingface.co/datasets/takala/financial_phrasebank (config: `sentences_allagree`)
+    - https://huggingface.co/datasets/zeroshot/twitter-financial-news-sentiment
+    - https://huggingface.co/datasets/ag_news
+    - https://huggingface.co/datasets/MohammadOthman/mo-customer-support-tweets-945k
+- Open-source libraries: PyTorch, Hugging Face tokenizers/datasets, Gradio, scikit-learn, matplotlib.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
