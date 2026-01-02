@@ -28,16 +28,16 @@ sys.stdout = Logger(log_file)
 
 # ========== Check for GPU ==========
 if not torch.cuda.is_available():
-    print("❌ CUDA GPU not available. Training stopped.")
+    print("CUDA GPU not available. Training stopped.")
     sys.exit(1)
 
 device = torch.device("cuda")
-print(f"✅ Using device: {device}")
+print(f"Using device: {device}")
 
 # ========== Parameters ==========
-VOCAB_SIZE = 30000  # set to your BPE vocab size
-EMBED_DIM = 128
-HIDDEN_DIM = 128
+VOCAB_SIZE = 64000
+EMBED_DIM = 1024
+HIDDEN_DIM = 512
 NUM_CLASSES = 3
 BATCH_SIZE = 64
 EPOCHS = 5
@@ -45,16 +45,16 @@ EPOCHS = 5
 # ========== Load Tokenized CSVs ==========
 def load_dataset(path):
     df = pd.read_csv(path)
-    sequences = df["input_ids"].apply(lambda x: [int(i) for i in x.strip("[]").split()])
+    sequences = df["input_ids"].apply(lambda x: [int(i) for i in x.strip().split()])
     labels = df["label"].tolist()
-    max_len = max(len(seq) for seq in sequences)
+    max_len = 1024
     padded = [seq + [0] * (max_len - len(seq)) for seq in sequences]
     x_tensor = torch.tensor(padded, dtype=torch.long)
     y_tensor = torch.tensor(labels, dtype=torch.long)
     return x_tensor, y_tensor
 
-x_train, y_train = load_dataset("data/final/train_tokenized.csv")
-x_test, y_test = load_dataset("data/final/test_tokenized.csv")
+x_train, y_train = load_dataset("data/final2/train_tokenized2.csv")
+x_test, y_test = load_dataset("data/final2/test_tokenized2.csv")
 
 train_loader = DataLoader(TensorDataset(x_train, y_train), batch_size=BATCH_SIZE, shuffle=True)
 test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=BATCH_SIZE)
@@ -63,7 +63,7 @@ test_loader = DataLoader(TensorDataset(x_test, y_test), batch_size=BATCH_SIZE)
 class BiLSTMClassifier(nn.Module):
     def __init__(self, vocab_size, embed_dim, hidden_dim, num_classes):
         super().__init__()
-        self.embedding = nn.Embedding(vocab_size, embed_dim)
+        self.embedding = nn.Embedding(vocab_size, embed_dim, padding_idx=0)
         self.lstm = nn.LSTM(embed_dim, hidden_dim, batch_first=True, bidirectional=True)
         self.fc = nn.Linear(hidden_dim * 2, num_classes)
     def forward(self, x):
@@ -88,13 +88,13 @@ for epoch in range(EPOCHS):
         loss.backward()
         optimizer.step()
         total_loss += loss.item()
-    print(f"📚 Epoch {epoch+1} — Loss: {total_loss / len(train_loader):.4f}")
+    print(f"Epoch {epoch+1} Loss: {total_loss / len(train_loader):.4f}")
 
 # ========== Save Model ==========
 os.makedirs("models", exist_ok=True)
-model_path = "models/bilstm_langid.pt"
+model_path = "models/bilstm_langid4.pt"
 torch.save(model.state_dict(), model_path)
-print(f"✅ Model saved to {model_path}")
+print(f"Model saved to {model_path}")
 
 # ========== Reload & Evaluate ==========
 model.load_state_dict(torch.load(model_path))
@@ -109,5 +109,5 @@ with torch.no_grad():
         total += y_batch.size(0)
 
 accuracy = correct / total
-print(f"✅ Test Accuracy: {accuracy:.4f}")
-print(f"🗂️  Training log saved to: {log_file}")
+print(f"Test Accuracy: {accuracy:.4f}")
+print(f"Training log saved to: {log_file}")

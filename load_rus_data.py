@@ -18,19 +18,19 @@ def save_text_only(dataset_name, text_field, file_prefix, max_items=None):
 
     print(f"✅ Saved {len(texts)} entries to data/ru/{file_prefix}.txt")
 
-# # 1. Librispeech (text)
-# save_text_only(
-#     dataset_name="FacelessLake/noise-augmented-russian-librispeech",
-#     text_field="text",
-#     file_prefix="librispeech_text", # small and fast
-# )
-# #
-# # 2. Bank Reviews (review)
-# save_text_only(
-#     dataset_name="Romjiik/Russian_bank_reviews",
-#     text_field="review",
-#     file_prefix="bank_reviews"
-# )
+# 1. Librispeech (text)
+save_text_only(
+    dataset_name="FacelessLake/noise-augmented-russian-librispeech",
+    text_field="text",
+    file_prefix="librispeech_text", # small and fast
+)
+#
+# 2. Bank Reviews (review)
+save_text_only(
+    dataset_name="Romjiik/Russian_bank_reviews",
+    text_field="review",
+    file_prefix="bank_reviews"
+)
 
 # 3. Russian Cleared Wikipedia (text)
 save_text_only(
