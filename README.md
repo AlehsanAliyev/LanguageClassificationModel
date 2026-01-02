@@ -7,7 +7,7 @@ A BiLSTM-based language identifier for Azerbaijani (az), English (en), and Russi
 - Serves a local Gradio demo for interactive language prediction.
 - Evaluates predictions with classification reports and confusion matrices.
 
-## Datasets 
+## Datasets
 Used by default in the current data download scripts:
 - Azerbaijani: `arzumanabbasov/azbanks-qadata`, `allmalab/DOLLMA` (configs: `anl-news`, `azwiki`) in `load_aze_data.py`.
 - English: `agentlans/wikipedia-paragraphs` in `load_english_data.py`.
@@ -160,30 +160,13 @@ Label space is defined in multiple scripts as:
 | `data/` | Raw and processed data (ignored in git) |
 | `logs/` | Training/eval logs (ignored in git) |
 
-## Testing
-No automated test suite is provided.
 
-Manual checks:
-```powershell
-python test_russian_transliteraion.py
-python test.py
-```
-
-## Reproducibility notes
-- `sentence_corpus.py` sets `random.seed(42)`.
-- `prepare_data_for_classification.py` uses `random_state=42` in `train_test_split`.
-- No global PyTorch seeds or deterministic flags are set (Unknown / Not provided yet).
 
 ## Roadmap / TODO
 - Align training and inference hyperparameters via a shared config.
 - Add CLI arguments for data/model paths.
 - Add CPU fallback for training instead of exiting when CUDA is unavailable.
 
-## License
-No license file found.
-
-## Citation
-Unknown / Not provided yet.
 
 ## Acknowledgements
 - Hugging Face datasets used in `load_aze_data.py`, `load_english_data.py`, and `load_rus_data.py`:
@@ -201,24 +184,3 @@ Unknown / Not provided yet.
     - https://huggingface.co/datasets/MohammadOthman/mo-customer-support-tweets-945k
 - Open-source libraries: PyTorch, Hugging Face tokenizers/datasets, Gradio, scikit-learn, matplotlib.
 
-## Security & Privacy
-When running Gradio locally, text stays on your machine. Network calls only occur if you run dataset download scripts.
-
-## Common Troubleshooting
-- Missing model file: ensure `models/bilstm_langid2.pt` exists or update the path in `gradio_app.py`.
-- Missing tokenizer file: ensure `data/final2/bpe_tokenizer.json` exists.
-- Missing data paths: regenerate `data/corpus/*.csv` and `data/final2/*.csv` via the pipeline scripts.
-- CUDA required: `BiLSTM_Classifier.py` exits if CUDA is unavailable.
-- Dependency conflicts: install in a fresh virtual environment.
-
-## Known Issues / TODO
-- `gradio_app.py` uses different model sizes (128/128) than `BiLSTM_Classifier.py` (1024/512).
-- `tokenizing.py` writes `bpe_tokenizer2.json`, while `gradio_app.py` loads `bpe_tokenizer.json`.
-- `top500_ru.py` prints a different output directory name than it writes to.
-
-## Getting Help
-Open an issue and include:
-- Command run and full error output
-- OS and Python version
-- GPU model / CUDA availability
-- The specific data/model paths you used
